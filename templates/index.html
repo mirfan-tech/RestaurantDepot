@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item List</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body class="container">
+    <h1 class="mt-5">Item List</h1>
+    {% for category, items_list in items.items() %}
+        <h2>{{ category }}</h2>
+        <ul class="list-group mt-3">
+            {% for item in items_list %}
+                <li class="list-group-item">
+                    <a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+    <a href="{{ url_for('order_summary') }}" class="btn btn-primary mt-3">View Order Summary</a>
+</body>
+</html>
