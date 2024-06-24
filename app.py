@@ -1,19 +1,59 @@
 import os
+import pyodbc
 from flask import Flask, render_template, request, redirect, url_for, send_file
 from fpdf import FPDF
-import os
-from items import items  # Import the categorized items list
+from dotenv import load_dotenv
 
+# Load environment variables from a .env file
+load_dotenv()
+
+# Flask app setup
 app = Flask(__name__)
 
 orders = []
 
+# Database connection string
+DB_SERVER = os.getenv('DB_SERVER')
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+
+if not all([DB_SERVER, DB_NAME, DB_USER, DB_PASSWORD]):
+    raise ValueError("Some environment variables are missing")
+
+connection_string = (
+    f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={DB_SERVER};DATABASE={DB_NAME};'
+    f'UID={DB_USER};PWD={DB_PASSWORD};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30'
+)
+
+def get_db_connection():
+    return pyodbc.connect(connection_string)
+
+def fetch_items():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT category, id, name FROM dbo.items")
+    rows = cursor.fetchall()
+    items = {}
+    for row in rows:
+        category = row[0]
+        item = {'id': row[1], 'name': row[2]}
+        if category in items:
+            items[category].append(item)
+        else:
+            items[category] = [item]
+    conn.close()
+    return items
+
 @app.route('/')
 def index():
+    items = fetch_items()
     return render_template('index.html', items=items)
 
 @app.route('/item/<int:item_id>', methods=['GET', 'POST'])
 def item_detail(item_id):
+    items = fetch_items()
+    item = None
     for category, items_list in items.items():
         item = next((i for i in items_list if i['id'] == item_id), None)
         if item:
@@ -42,4 +82,3 @@ def generate_pdf():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
