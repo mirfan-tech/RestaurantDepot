@@ -5,15 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Summary</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        // JavaScript function to clear the list
+        function clearList() {
+            const list = document.querySelector('.list-group');
+            while (list.firstChild) {
+                list.removeChild(list.firstChild);
+            }
+
+            // Send request to clear the list in the backend
+            fetch('/clear-list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('List cleared successfully');
+                } else {
+                    console.error('Failed to clear the list');
+                }
+            });
+        }
+
+        function deleteItem(itemId) {
+            var itemElement = document.getElementById('item_' + itemId);
+            if (itemElement) {
+                itemElement.remove(); // Remove the item from the DOM
+
+                // Send request to delete the item from the backend
+                updateQuantity('delete', itemId);
+            } else {
+                console.error('Item not found:', itemId); // Log an error if the item is not found
+            }
+        }
+
+        function changeQuantity(itemId, change) {
+            var quantityElement = document.getElementById('quantity_' + itemId);
+            var currentQuantity = parseInt(quantityElement.innerText, 10); // Parse the current quantity as an integer
+            var newQuantity = currentQuantity + change; // Calculate the new quantity
+            
+            if (newQuantity < 0) { // Optional: Prevent negative quantities
+                newQuantity = 0;
+            }
+
+            quantityElement.innerText = newQuantity; // Update the quantity display
+
+            // Send request to update the quantity in the backend
+            const action = change > 0 ? 'increment' : 'decrement';
+            updateQuantity(action, itemId);
+        }
+
+        function updateQuantity(action, itemId) {
+            // Send a POST request to the server to update the quantity
+            fetch(`/update-quantity/${itemId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({action: action}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update the UI based on the response
+                document.getElementById(`quantity_${itemId}`).innerText = data.newQuantity;
+            });
+        }
+    </script>
 </head>
 <body class="container">
     <h1 class="mt-5">Order Summary</h1>
     <ul class="list-group mt-3">
         {% for order in orders %}
-            <li class="list-group-item">{{ order.item.name }} - {{ order.quantity }}</li>
+            <li id="item_{{ order.item.id }}" class="list-group-item">
+            {{ order.item.name }}
+            <!-- Decrement button -->
+            <button onclick="changeQuantity('{{ order.item.id }}', -1)" class="btn btn-secondary btn-sm">-</button>
+            <!-- Display quantity -->
+            <span id="quantity_{{ order.item.id }}">{{ order.quantity }}</span>
+            <!-- Increment button -->
+            <button onclick="changeQuantity('{{ order.item.id }}', 1)" class="btn btn-secondary btn-sm">+</button>
+            <!-- Delete button -->
+            <button onclick="deleteItem('{{ order.item.id }}')" class="btn btn-danger btn-sm">Delete</button>
+            </li>
         {% endfor %}
     </ul>
     <a href="{{ url_for('generate_pdf') }}" class="btn btn-success mt-3">Generate PDF</a>
     <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Item List</a>
+    <!-- Button to clear the list -->
+    <button onclick="clearList()" class="btn btn-danger mt-3">Clear List</button>
 </body>
 </html>

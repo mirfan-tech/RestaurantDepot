@@ -1,7 +1,6 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
 from fpdf import FPDF
-import os
 from items import items  # Import the categorized items list
 
 app = Flask(__name__)
@@ -20,9 +19,36 @@ def item_detail(item_id):
             break
     if request.method == 'POST':
         quantity = request.form.get('quantity')
-        orders.append({'item': item, 'quantity': quantity})
+        orders.append({'item': item, 'quantity': int(quantity)})
         return redirect(url_for('index'))  # Redirect back to the main list
     return render_template('item_detail.html', item=item)
+
+@app.route('/clear-list', methods=['POST'])
+def clear_list():
+    global orders
+    orders = []
+    return jsonify({'success': True})
+
+
+@app.route('/update-quantity/<int:item_id>', methods=['POST'])
+def update_quantity(item_id):
+    action = request.json['action']
+    new_quantity = 0
+
+    for order in orders:
+        if order['item']['id'] == item_id:
+            if action == 'increment':
+                order['quantity'] += 1
+            elif action == 'decrement' and order['quantity'] > 0:
+                order['quantity'] -= 1
+            elif action == 'delete':
+                orders.remove(order)
+                new_quantity = 0
+                break
+            new_quantity = order['quantity']
+            break
+    
+    return jsonify({'newQuantity': new_quantity})
 
 @app.route('/summary')
 def order_summary():
@@ -42,4 +68,3 @@ def generate_pdf():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
