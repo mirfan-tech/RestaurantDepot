@@ -22,7 +22,7 @@ driver = '{ODBC Driver 18 for SQL Server}'
 # Function to fetch items from Azure SQL Database
 def fetch_items_from_db():
     items_by_category = {}  # Initialize the dictionary here
-    with pyodbc.connect(f'DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={username};PWD={password}') as conn:
+    with pyodbc.connect(f'DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={username};PWD={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;') as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT ItemID, ItemName, Category FROM Items")  # Adjust SQL query as needed
         for row in cursor:
