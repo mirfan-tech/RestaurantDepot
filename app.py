@@ -18,6 +18,7 @@ username = os.getenv('AZURE_USERNAME')
 password = os.getenv('AZURE_PASSWORD')
 driver = '{ODBC Driver 18 for SQL Server}'
 
+
 # Function to fetch items from Azure SQL Database
 def fetch_items_from_db():
     items_by_category = {}  # Initialize the dictionary here
