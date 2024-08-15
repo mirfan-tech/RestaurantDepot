@@ -3,11 +3,28 @@ from flask import Flask, render_template, request, redirect, url_for, send_file,
 from fpdf import FPDF
 from dotenv import load_dotenv
 import sqlite3  # Use sqlite3 for local SQLite database handling
+from azure.storage.blob import BlobServiceClient
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
+
+# Azure Blob Storage settings
+connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+container_name = os.getenv('AZURE_CONTAINER_NAME')
+blob_name = 'items.db'
+
+# Function to download items.db from Azure Blob Storage
+def download_blob():
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    download_file_path = os.path.join(os.getcwd(), blob_name)
+
+    with open(download_file_path, "wb") as download_file:
+        download_file.write(blob_client.download_blob().readall())
+
+    return download_file_path
 
 orders = []
 
