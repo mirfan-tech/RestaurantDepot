@@ -15,21 +15,30 @@ connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 container_name = os.getenv('AZURE_CONTAINER_NAME')
 blob_name = 'purchase_manager.db'
 
-# Function to download .db from Azure Blob Storage
 def download_blob():
-    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-    download_file_path = os.path.join(os.getcwd(), blob_name)
+    try:
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+        
+        # Download file to the wwwroot directory in Azure Web App
+        download_file_path = os.path.join('/home/site/wwwroot', blob_name)
+        
+        with open(download_file_path, "wb") as download_file:
+            download_file.write(blob_client.download_blob().readall())
+        
+        print(f"Database file downloaded to {download_file_path}")
+        return download_file_path
+    except Exception as e:
+        print(f"Failed to download the database file: {e}")
+        raise
 
-    with open(download_file_path, "wb") as download_file:
-        download_file.write(blob_client.download_blob().readall())
 
-    return download_file_path
-
-orders = []
 
 # Database connection parameters from .env file
 DATABASE = 'purchase_manager.db'  # .db file name
+
+orders = []
+
 
 # Function to fetch items from SQLite Database
 DATABASE = download_blob()  # This downloads the database from Azure Blob Storage
