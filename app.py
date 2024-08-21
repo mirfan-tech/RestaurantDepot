@@ -13,9 +13,9 @@ app = Flask(__name__)
 # Azure Blob Storage settings
 connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 container_name = os.getenv('AZURE_CONTAINER_NAME')
-blob_name = 'items.db'
+blob_name = 'purchase_manager.db'
 
-# Function to download items.db from Azure Blob Storage
+# Function to download .db from Azure Blob Storage
 def download_blob():
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
@@ -29,16 +29,21 @@ def download_blob():
 orders = []
 
 # Database connection parameters from .env file
-DATABASE = 'items.db'  # Assuming your SQLite database file is named 'items.db'
+DATABASE = 'purchase_manager.db'  # .db file name
 
 # Function to fetch items from SQLite Database
+DATABASE = download_blob()  # This downloads the database from Azure Blob Storage
 def fetch_items_from_db():
     items_by_category = {}
     with sqlite3.connect(DATABASE) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT ItemNo, Items, Category FROM items")  # Adjust SQL query as needed
+        cursor.execute("""
+            SELECT Items.ItemId, Items.ItemDescription, ItemCategory.CategoryName
+            FROM Items
+            JOIN ItemCategory ON Items.CategoryID = ItemCategory.CategoryID
+        """)
         for row in cursor:
-            item = {'id': row[0], 'name': row[1], 'category': row[2]}
+            item = {'id': row[0], 'name': row[1], 'category': row[2]}  
             category = row[2]
             if category not in items_by_category:
                 items_by_category[category] = []
